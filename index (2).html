@@ -1,0 +1,79 @@
+<!doctype html><html><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TableTime Pro • Venue Portal</title>
+<link rel="stylesheet" href="styles.css">
+
+<link rel="icon" href="/icons/favicon.ico">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b1220">
+
+</head><body>
+<header class="header">
+  <div style="display:flex;align-items:center;gap:12px"><div style="width:12px;height:12px;background:#10b981;border-radius:50%;box-shadow:0 0 12px #10b981"></div>
+  <strong>TableTime Pro</strong><span class="badge">Venue Portal</span><span class="badge loc-badge" id="venueLocationName"></span></div>
+  <div class="row"><a href="index.html"><button class="ghost">Staff App</button></a><button class="ghost" onclick="openModal('ownerLogin')">Sign in</button></div>
+</header>
+<div class="page">
+  <div class="grid c3">
+    <div class="card"><h2>Filters</h2>
+      <div class="grid c2">
+        <div><label>From <input id="fromDate" type="date"></label></div>
+        <div><label>To <input id="toDate" type="date"></label></div>
+      </div>
+      <div class="row"><button onclick="loadReport()">Run Report</button><button class="ghost" onclick="exportCSV()">Export CSV</button></div>
+    </div>
+    <div class="card"><h2>KPIs</h2>
+      <div class="row"><div>Sessions: <b id="rSessions">0</b></div><div>Time (hrs): <b id="rHours">0.00</b></div><div>Revenue: <b id="rMoney">$0.00</b></div></div>
+    </div>
+    <div class="card"><h2>Integrity</h2>
+      <div class="small">Sessions are signed with SHA‑256. Any edits are flagged.</div>
+      <div class="row"><button class="ghost" onclick="verifyAll()">Verify All</button><span id="verifyResult" class="small"></span></div>
+    </div>
+  </div>
+  <h2 style="margin-top:16px">Sessions</h2>
+  <div class="card" style="overflow:auto">
+    <table id="report" style="width:100%;border-collapse:collapse">
+      <thead><tr><th align="left">Start</th><th align="left">Stop</th><th align="left">Table</th><th align="right">Players</th><th align="right">Min</th><th align="right">$</th><th align="left">Staff</th><th align="left">Hash</th><th align="left">Valid</th></tr></thead>
+      <tbody id="reportBody"></tbody>
+    </table>
+  </div>
+</div>
+<footer><div class="small">TableTime Pro © Southern Amusement</div></footer>
+
+<div id="ownerLogin" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+  <div class="card" style="max-width:420px;width:92%"><h2>Venue Sign In</h2>
+    <label>Venue PIN <input id="ownerPinInput" type="password"></label>
+    <div class="row"><button onclick="ownerSignIn()">Sign in</button><button class="ghost" onclick="closeModal('ownerLogin')">Cancel</button></div>
+  </div>
+</div>
+
+<script src="sha256.js"></script><script src="store.js"></script>
+<script>
+let OWNER={pin:'9090',secret:''};
+
+async function setVenueHeader(){ try{ await idbOpen(); await ensureDefaults(); const s=await get('settings','location'); const el=document.getElementById('venueLocationName'); if(el && s?.name){ el.textContent=s.name; } }catch(e){} }
+
+function openModal(id){document.getElementById(id).style.display='flex'} function closeModal(id){document.getElementById(id).style.display='none'}
+async function loadOwner(){ await idbOpen(); await ensureDefaults(); const o=await get('settings','owner'); OWNER.pin=o?.pin||'9090'; OWNER.secret=o?.secret||''; }
+async function ownerSignIn(){ const pin=(document.getElementById('ownerPinInput').value||'').trim(); if(pin!==OWNER.pin){alert('Invalid PIN');return;} closeModal('ownerLogin'); alert('Signed in.'); }
+function setDateDefaults(){ const t=new Date(); const s=new Date(t.getFullYear(),t.getMonth(),1); const e=new Date(t.getFullYear(),t.getMonth()+1,0); fromDate.value=s.toISOString().slice(0,10); toDate.value=e.toISOString().slice(0,10); }
+async function loadReport(){ const from=new Date(fromDate.value), to=new Date(toDate.value); const all=await getAll('sessions');
+ const rows=all.filter(s=>s.stop && new Date(s.start)>=from && new Date(s.start)<=new Date(to.getTime()+86400000-1)).sort((a,b)=>a.start.localeCompare(b.start));
+ reportBody.innerHTML=''; let totalMin=0,totalAmt=0; for(const s of rows){ totalMin+=s.minutes||0; totalAmt+=s.amount||0; const valid=(await signSession(s,OWNER.secret))===s.signed;
+ const tr=document.createElement('tr'); tr.innerHTML=`<td>${new Date(s.start).toLocaleString()}</td><td>${new Date(s.stop).toLocaleString()}</td><td>${s.tableName}</td><td align="right">${s.players}</td><td align="right">${s.minutes}</td><td align="right">$${(s.amount||0).toFixed(2)}</td><td>${s.staffPin}</td><td style="font-family:monospace">${(s.signed||'').slice(0,12)}…</td><td>${valid?'✅':'⚠️'}</td>`; reportBody.appendChild(tr); }
+ rSessions.textContent=rows.length; rHours.textContent=(totalMin/60).toFixed(2); rMoney.textContent='$'+(Math.round(totalAmt*100)/100).toFixed(2); }
+async function exportCSV(){ const all=await getAll('sessions'); const rows=[['start','stop','table','players','minutes','amount','staffPin','hash']];
+ all.filter(s=>s.stop).forEach(s=>rows.push([s.start,s.stop,s.tableName,s.players,s.minutes,s.amount,s.staffPin,s.signed])); const csv=rows.map(r=>r.map(x=>`"${x??''}"`).join(',')).join('\\n');
+ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=`venue_sessions_${Date.now()}.csv`; a.click(); }
+async function verifyAll(){ const all=await getAll('sessions'); let ok=0,bad=0; for(const s of all){ const v=(await signSession(s,OWNER.secret))===s.signed; v?ok++:bad++; } verifyResult.textContent=`${ok} valid, ${bad} invalid`; alert('Verification complete: '+verifyResult.textContent); }
+(async function(){ await loadOwner(); setDateDefaults(); await setVenueHeader(); await loadReport(); })();
+</script>
+
+<footer style="margin:32px 0 16px;opacity:.7;font-size:.875rem;text-align:center">
+  <a href="mailto:support@tabletimepro.com" style="color:#14b8a6;text-decoration:none">Support</a>
+  <span style="margin:0 8px;color:#64748b">•</span>
+  <a href="/privacy.html" style="color:#14b8a6;text-decoration:none">Privacy</a>
+</footer>
+
+</body></html>

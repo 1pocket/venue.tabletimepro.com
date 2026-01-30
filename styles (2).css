@@ -1,0 +1,196 @@
+:root{
+  --bg:#0b0f1a; --panel:#0f172a; --panel2:#0d1422; --ink:#e5e7eb; --muted:#9ca3af; --line:#1f2937;
+  --brand:#10b981; --warn:#f59e0b; --danger:#ef4444; --good:#34d399;
+  --felt:#2aa6e1; /* Simonis Tournament Blue */
+  --rail:#1a1f2d; --wood:#372a1f; --metal:#9aa2ad; --pocket:#0a0a0a;
+}
+*{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+a{color:var(--brand)} button{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--brand);color:#081016;font-weight:600}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)} button.warn{background:var(--warn)} button.danger{background:var(--danger);color:#fff}
+input,select{background:#0b1220;border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:10px}
+.header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:16px;position:sticky;top:0;background:rgba(11,15,26,.85);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);z-index:5}
+.badge{border:1px solid var(--line);padding:4px 8px;border-radius:999px;color:var(--muted);font-size:12px}
+.page{padding:16px} .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:16px}
+.grid{display:grid;gap:16px} .grid.c2{grid-template-columns:repeat(2,1fr)} .grid.c3{grid-template-columns:repeat(3,1fr)}
+.table-list{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.small{font-size:12px;color:var(--muted)} .table-money{font-weight:800}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+h1,h2{margin:0 0 8px 0}
+@media(max-width:760px){.grid.c3,.grid.c2{grid-template-columns:1fr}}
+
+/* Pool table visual (CSS only, performant) */
+.table-visual{
+  position:relative;width:100%;aspect-ratio:2/1;border-radius:14px;
+  background:var(--wood);border:1px solid #2a2118;box-shadow:inset 0 0 0 6px var(--rail);
+}
+.table-visual .felt{
+  position:absolute;inset:14px;border-radius:10px;
+  background:radial-gradient(120% 100% at 50% 0%, #4ec0f0 0%, var(--felt) 55%, #1f8ec7 100%);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,0.05);
+}
+/* Cushions (subtle darker band around felt) */
+.table-visual .cushion{
+  position:absolute;inset:10px;border-radius:8px;
+  box-shadow:inset 0 0 0 6px rgba(10,20,30,0.6);
+  pointer-events:none;
+}
+/* Diamond sights */
+.sight{position:absolute;width:6px;height:6px;border-radius:2px;background:#cbd5e1;opacity:.7}
+/* 4 per long rail, 2 per short rail */
+.sight.t1{top:12px;left:28%}.sight.t2{top:12px;left:50%}.sight.t3{top:12px;left:72%}
+.sight.b1{bottom:12px;left:28%}.sight.b2{bottom:12px;left:50%}.sight.b3{bottom:12px;left:72%}
+.sight.l1{left:12px;top:28%}.sight.l2{left:12px;top:50%}.sight.l3{left:12px;top:72%}
+.sight.r1{right:12px;top:28%}.sight.r2{right:12px;top:50%}.sight.r3{right:12px;top:72%}
+
+/* Pockets (6) with metal trim */
+.pocket{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--pocket);box-shadow:0 0 0 3px var(--metal),0 0 0 5px var(--rail)}
+.pocket.tl{top:7px;left:7px} .pocket.tr{top:7px;right:7px}
+.pocket.bl{bottom:7px;left:7px} .pocket.br{bottom:7px;right:7px}
+.pocket.ml{top:50%;left:6px;transform:translate(-2px,-50%)} .pocket.mr{top:50%;right:6px;transform:translate(2px,-50%)}
+
+
+   Smaller pockets, accurate placement, side cut-ins.
+   You can tweak sizes: --pocket-corner, --pocket-side.
+*/
+:root{
+  --pocket-corner: 12px; /* visual size at corners */
+  --pocket-side: 10px;   /* visual size at side/middle */
+  --rail-thick: 14px;    /* rail width between wood and felt */
+}
+
+/* Rebuild pocket visuals as "cutouts" overlapping the felt */
+.table-visual{ position:relative }
+.table-visual .felt{ position:absolute; inset:14px; border-radius:10px; }
+.table-visual .cushion{ position:absolute; inset:10px; border-radius:8px; box-shadow:inset 0 0 0 var(--rail-thick) rgba(10,20,30,0.6) }
+
+/* Corner pockets: offset inwards and diagonally clipped */
+.pocket{position:absolute; pointer-events:none}
+.pocket.corner{width:var(--pocket-corner); height:var(--pocket-corner); background:#0a0a0a; border-radius:50%;
+  box-shadow: 0 0 0 2px #949aa3, 0 0 0 4px rgba(14,20,30,0.8);
+}
+.pocket.tl{ top: 8px; left: 8px; transform: translate(-30%,-30%) rotate(45deg); }
+.pocket.tr{ top: 8px; right: 8px; transform: translate(30%,-30%) rotate(-45deg); }
+.pocket.bl{ bottom: 8px; left: 8px; transform: translate(-30%,30%) rotate(-45deg); }
+.pocket.br{ bottom: 8px; right: 8px; transform: translate(30%,30%) rotate(45deg); }
+
+/* Side pockets: narrower, centered on long rails with notch */
+.pocket.side{ width:var(--pocket-side); height:var(--pocket-side); background:#0a0a0a; border-radius:50%;
+  box-shadow: 0 0 0 2px #949aa3, 0 0 0 4px rgba(14,20,30,0.8);
+}
+.pocket.ml{ left: 50%; top: 8px; transform: translate(-50%,-50%); }      /* top middle */
+.pocket.mr{ left: 50%; bottom: 8px; transform: translate(-50%,50%); }     /* bottom middle */
+
+/* notch effect so side pockets feel "cut into" the rail */
+.pocket.side::after{
+  content:''; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width: 180%; height: 60%; background:#0a0a0a; border-radius: 8px;
+}
+
+/* Fine tune sights after pocket shift */
+.sight.t1{top:12px;left:28%}.sight.t2{top:12px;left:50%}.sight.t3{top:12px;left:72%}
+.sight.b1{bottom:12px;left:28%}.sight.b2{bottom:12px;left:50%}.sight.b3{bottom:12px;left:72%}
+.sight.l1{left:12px;top:28%}.sight.l2{left:12px;top:50%}.sight.l3{left:12px;top:72%}
+.sight.r1{right:12px;top:28%}.sight.r2{right:12px;top:50%}.sight.r3{right:12px;top:72%}
+
+/* Smaller, pure black pockets. Side pockets are half-moons cut into the table. */
+:root{
+  --pocket-corner: 12px;
+  --pocket-side-w: 28px; /* half-moon width */
+  --pocket-side-h: 12px; /* half-moon height */
+}
+/* Base pocket reset */
+.pocket{position:absolute; background:#000; box-shadow:none; border:none; pointer-events:none}
+
+/* Corner pockets (quarter-circle) — positions were fine; just remove trim and size them tighter */
+.pocket.corner{ width:var(--pocket-corner); height:var(--pocket-corner); border-radius:50% }
+.pocket.tl{ top: 8px; left: 8px; transform: translate(-30%,-30%) }
+.pocket.tr{ top: 8px; right: 8px; transform: translate(30%,-30%) }
+.pocket.bl{ bottom: 8px; left: 8px; transform: translate(-30%,30%) }
+.pocket.br{ bottom: 8px; right: 8px; transform: translate(30%,30%) }
+
+/* Side pockets — true half-moons intruding into the felt at the long-rail centers */
+.pocket.side{ width:var(--pocket-side-w); height:var(--pocket-side-h) }
+.pocket.ml{ /* top long rail midpoint */
+  left:50%; top:14px; transform:translate(-50%,-50%); border-bottom-left-radius:999px; border-bottom-right-radius:999px;
+}
+.pocket.mr{ /* bottom long rail midpoint */
+  left:50%; bottom:14px; transform:translate(-50%,50%); border-top-left-radius:999px; border-top-right-radius:999px;
+}
+
+/* Hide mid-rail diamond sights so the pocket sits there cleanly */
+.sight.l2, .sight.r2{ display:none }
+
+
+   - Use container overflow:hidden and place circles partially outside so only the cut-in shows.
+   - Corners: quarter-circles; Sides: half-circles.
+*/
+.table-visual{ position:relative; overflow:hidden } /* key for cut-in illusion */
+:root{
+  --felt-inset: 14px;
+  --corner-dia: 28px;   /* corner pocket diameter (visual mouth) */
+  --side-dia: 26px;     /* side pocket diameter (visual mouth) */
+}
+
+/* Felt/rail kept from earlier; ensure felt inset matches pocket offsets */
+.table-visual .felt{ position:absolute; inset:var(--felt-inset); border-radius:10px;
+  background:radial-gradient(120% 100% at 50% 0%, #4ec0f0 0%, var(--felt) 55%, #1f8ec7 100%);
+}
+.table-visual .cushion{ position:absolute; inset:10px; border-radius:8px; box-shadow:inset 0 0 0 var(--rail-thick) rgba(10,20,30,0.6) }
+
+/* Pockets are pure black circles; no outlines/trim */
+.pocket{ position:absolute; background:#000; border-radius:50%; width:var(--corner-dia); height:var(--corner-dia); pointer-events:none; }
+
+/* Corner pockets: center circles outside the corners so only quarter shows */
+.pocket.tl{ top: var(--felt-inset); left: var(--felt-inset); transform: translate(-50%,-50%); }
+.pocket.tr{ top: var(--felt-inset); right: var(--felt-inset); transform: translate(50%,-50%); }
+.pocket.bl{ bottom: var(--felt-inset); left: var(--felt-inset); transform: translate(-50%,50%); }
+.pocket.br{ bottom: var(--felt-inset); right: var(--felt-inset); transform: translate(50%,50%); }
+
+/* Side pockets: half-circles on long-rail midpoints */
+.pocket.ml, .pocket.mr{ width:var(--side-dia); height:var(--side-dia); }
+.pocket.ml{ left:50%; top: var(--felt-inset); transform: translate(-50%,-50%); }      /* top midpoint */
+.pocket.mr{ left:50%; bottom: var(--felt-inset); transform: translate(-50%,50%); }   /* bottom midpoint */
+
+/* Remove diamond sights for a clean look */
+.sight{ display:none !important }
+
+/* --- v2.6 pockets (deterministic) --- */
+:root{
+  --felt-inset: 14px;
+  --corner-dia: 22px;   /* slightly smaller than v2.5 */
+  --side-dia: 22px;     /* width of side mouth */
+}
+.table-visual{ position:relative }
+.table-visual .felt{ position:absolute; inset:var(--felt-inset); border-radius:10px; z-index:1 }
+.table-visual .cushion{ position:absolute; inset:10px; border-radius:8px; box-shadow:inset 0 0 0 var(--rail-thick) rgba(10,20,30,0.6); z-index:2 }
+.pocket{ position:absolute; background:#000; pointer-events:none; z-index:3 }
+
+/* Corner pockets: quarter-circles cut in at the felt corners using clip-path */
+.pocket.corner{ width:var(--corner-dia); height:var(--corner-dia); border-radius:50% }
+.pocket.tl{ top: calc(var(--felt-inset) - var(--corner-dia)/2); left: calc(var(--felt-inset) - var(--corner-dia)/2); clip-path: polygon(50% 50%, 100% 50%, 100% 100%, 50% 100%); }
+.pocket.tr{ top: calc(var(--felt-inset) - var(--corner-dia)/2); right: calc(var(--felt-inset) - var(--corner-dia)/2); clip-path: polygon(0 50%, 50% 50%, 50% 100%, 0 100%); }
+.pocket.bl{ bottom: calc(var(--felt-inset) - var(--corner-dia)/2); left: calc(var(--felt-inset) - var(--corner-dia)/2); clip-path: polygon(50% 0, 100% 0, 100% 50%, 50% 50%); }
+.pocket.br{ bottom: calc(var(--felt-inset) - var(--corner-dia)/2); right: calc(var(--felt-inset) - var(--corner-dia)/2); clip-path: polygon(0 0, 50% 0, 50% 50%, 0 50%); }
+
+/* Side pockets: precise half-circles */
+.pocket.side{ width:var(--side-dia); height: calc(var(--side-dia) / 2); background:#000 }
+.pocket.ml{ /* top long rail midpoint */
+  left: 50%; top: calc(var(--felt-inset) - var(--side-dia) / 2);
+  transform: translateX(-50%); border-bottom-left-radius: 999px; border-bottom-right-radius: 999px;
+}
+.pocket.mr{ /* bottom long rail midpoint */
+  left: 50%; bottom: calc(var(--felt-inset) - var(--side-dia) / 2);
+  transform: translateX(-50%); border-top-left-radius: 999px; border-top-right-radius: 999px;
+}
+
+/* No sights */
+.sight{ display:none !important }
+
+/* --- v2.Final polish --- */
+.header{padding:18px}
+.badge{border:1px solid var(--line);padding:4px 8px;border-radius:999px;color:var(--muted);font-size:12px}
+.loc-badge{font-size:15px;padding:6px 12px;color:#e5e7eb;border-color:#2a3446;background:rgba(16,185,129,0.10)}
+button[disabled]{opacity:.55;cursor:not-allowed}
+.card h2{margin:0 0 10px 0}
+.row{gap:12px}
+.table-list{gap:18px}
