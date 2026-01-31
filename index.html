@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TableTime Pro • Venue Portal</title>
+<link rel="icon" href="/icons/favicon.ico">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b1220">
+<style>
+:root{
+  --bg:#0b0f1a; --panel:#0f172a; --panel2:#0d1422; --ink:#e5e7eb; --muted:#9ca3af; --line:#1f2937;
+  --brand:#10b981; --warn:#f59e0b; --danger:#ef4444; --good:#34d399;
+  --felt:#2aa6e1; --rail:#1a1f2d; --wood:#372a1f; --metal:#9aa2ad; --pocket:#0a0a0a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+a{color:var(--brand)}
+button{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--brand);color:#081016;font-weight:600}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+button.warn{background:var(--warn)}
+button.danger{background:var(--danger);color:#fff}
+button[disabled]{opacity:.55;cursor:not-allowed}
+input,select{background:#0b1220;border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:10px}
+.header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:18px;position:sticky;top:0;background:rgba(11,15,26,.85);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);z-index:5}
+.badge{border:1px solid var(--line);padding:4px 8px;border-radius:999px;color:var(--muted);font-size:12px}
+.loc-badge{font-size:15px;padding:6px 12px;color:#e5e7eb;border-color:#2a3446;background:rgba(16,185,129,0.10)}
+.page{padding:16px}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h2{margin:0 0 10px 0}
+.grid{display:grid;gap:16px}
+.grid.c2{grid-template-columns:repeat(2,1fr)}
+.grid.c3{grid-template-columns:repeat(3,1fr)}
+.small{font-size:12px;color:var(--muted)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+h1,h2{margin:0 0 8px 0}
+@media(max-width:760px){.grid.c3,.grid.c2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px;text-align:left;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase}
+tr:hover{background:rgba(255,255,255,0.02)}
+
+.auth-banner{background:linear-gradient(90deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05));border-left:3px solid var(--brand);padding:12px 16px;margin-bottom:16px;border-radius:0 8px 8px 0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.auth-banner .user-info{display:flex;align-items:center;gap:8px}
+.auth-banner .user-badge{background:var(--brand);color:#081016;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;text-transform:uppercase}
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.tab{padding:10px 16px;border-radius:8px 8px 0 0;background:transparent;border:1px solid transparent;color:var(--muted);cursor:pointer;font-weight:500;transition:all 0.2s}
+.tab:hover{color:var(--ink);background:rgba(255,255,255,0.03)}
+.tab.active{background:var(--panel);border-color:var(--line);border-bottom-color:var(--panel);color:var(--brand)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.audit-log{max-height:400px;overflow-y:auto}
+.audit-row{padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px}
+.audit-row:hover{background:rgba(255,255,255,0.02)}
+.audit-time{color:var(--muted);font-size:11px}
+.audit-action{font-weight:500}
+.audit-action.login{color:var(--brand)}
+.audit-action.logout{color:var(--warn)}
+.audit-action.session{color:#60a5fa}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+.stat-value{font-size:28px;font-weight:700;color:var(--brand)}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;margin-top:4px}
+.back-btn{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;margin-bottom:16px;text-decoration:none}
+.back-btn:hover{color:var(--ink)}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:100}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:12px;height:12px;background:#10b981;border-radius:50%;box-shadow:0 0 12px #10b981"></div>
+    <strong>TableTime Pro</strong>
+    <span class="badge">Venue Portal</span>
+    <span class="badge loc-badge" id="venueLocationName"></span>
+  </div>
+  <div class="row">
+    <a href="https://staff.tabletimepro.com" id="staffAppLink"><button class="ghost">Staff App</button></a>
+    <button class="ghost" onclick="openModal('ownerLogin')" id="signInBtn">Sign in</button>
+    <button class="ghost" onclick="signOut()" id="signOutBtn" style="display:none">Sign out</button>
+  </div>
+</header>
+
+<div class="page">
+  <!-- Auth Banner (shown when logged in) -->
+  <div class="auth-banner" id="authBanner" style="display:none">
+    <div class="user-info">
+      <span class="user-badge" id="userRole">Manager</span>
+      <span>Logged in as <strong id="userName">Manager</strong></span>
+    </div>
+    <span class="small" id="tenantInfo"></span>
+  </div>
+
+  <!-- Back to Staff App (shown when came from staff app) -->
+  <a href="#" class="back-btn" id="backToStaff" style="display:none" onclick="goBackToStaff(); return false;">
+    ← Back to Staff App
+  </a>
+
+  <!-- Tab Navigation -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('reports')">📊 Reports</button>
+    <button class="tab" onclick="showTab('audit')" id="auditTab">📜 Audit Log</button>
+    <button class="tab" onclick="showTab('analytics')" id="analyticsTab">📈 Analytics</button>
+  </div>
+
+  <!-- Reports Tab -->
+  <div id="reports-tab" class="tab-content active">
+    <div class="grid c3">
+      <div class="card">
+        <h2>Filters</h2>
+        <div class="grid c2">
+          <div><label>From <input id="fromDate" type="date"></label></div>
+          <div><label>To <input id="toDate" type="date"></label></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button onclick="loadReport()">Run Report</button>
+          <button class="ghost" onclick="exportCSV()">Export CSV</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>KPIs</h2>
+        <div class="row">
+          <div>Sessions: <b id="rSessions">0</b></div>
+          <div>Time (hrs): <b id="rHours">0.00</b></div>
+          <div>Revenue: <b id="rMoney">$0.00</b></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Integrity</h2>
+        <div class="small">Sessions are signed with SHA‑256. Any edits are flagged.</div>
+        <div class="row" style="margin-top:8px">
+          <button class="ghost" onclick="verifyAll()">Verify All</button>
+          <span id="verifyResult" class="small"></span>
+        </div>
+      </div>
+    </div>
+    
+    <h2 style="margin-top:16px">Sessions</h2>
+    <div class="card" style="overflow:auto">
+      <table id="report">
+        <thead>
+          <tr>
+            <th>Start</th>
+            <th>Stop</th>
+            <th>Table</th>
+            <th style="text-align:right">Players</th>
+            <th style="text-align:right">Min</th>
+            <th style="text-align:right">$</th>
+            <th>Staff</th>
+            <th>Hash</th>
+            <th>Valid</th>
+          </tr>
+        </thead>
+        <tbody id="reportBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Audit Log Tab -->
+  <div id="audit-tab" class="tab-content">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">Audit Log</h2>
+        <button class="ghost" onclick="exportAuditLog()">Export Log</button>
+      </div>
+      <div class="small" style="margin-bottom:12px">All actions are logged with timestamps for accountability.</div>
+      <div class="audit-log" id="auditLogBody">
+        <div class="audit-row" style="color:var(--muted);text-align:center">Loading audit log...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analytics Tab -->
+  <div id="analytics-tab" class="tab-content">
+    <div class="card">
+      <h2>Performance Summary</h2>
+      <div class="stat-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-value" id="statTotalSessions">0</div>
+          <div class="stat-label">Total Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statTotalRevenue">$0</div>
+          <div class="stat-label">Total Revenue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statAvgDuration">0</div>
+          <div class="stat-label">Avg Minutes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statBusiestTable">-</div>
+          <div class="stat-label">Busiest Table</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card" style="margin-top:16px">
+      <h2>Revenue by Table</h2>
+      <div id="tableBreakdown" class="small">Loading...</div>
+    </div>
+    
+    <div class="card" style="margin-top:16px">
+      <h2>Staff Performance</h2>
+      <div id="staffBreakdown" class="small">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<footer style="margin:32px 0 16px;opacity:.7;font-size:.875rem;text-align:center">
+  <a href="mailto:support@tabletimepro.com" style="color:#14b8a6;text-decoration:none">Support</a>
+  <span style="margin:0 8px;color:#64748b">•</span>
+  <a href="/privacy.html" style="color:#14b8a6;text-decoration:none">Privacy</a>
+</footer>
+
+<div class="small" style="text-align:center;margin-bottom:16px">TableTime Pro © Southern Amusement</div>
+
+<!-- Login Modal -->
+<div id="ownerLogin" class="modal">
+  <div class="card" style="max-width:420px;width:92%">
+    <h2>Venue Sign In</h2>
+    <label>Manager PIN <input id="ownerPinInput" type="password" placeholder="Enter PIN"></label>
+    <div class="row" style="margin-top:12px">
+      <button onclick="ownerSignIn()">Sign in</button>
+      <button class="ghost" onclick="closeModal('ownerLogin')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SHA-256 Implementation (inline)
+// ============================================================
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function signSession(session, secret) {
+  const payload = [
+    session.start,
+    session.stop,
+    session.tableName,
+    session.players,
+    session.minutes,
+    session.amount,
+    session.staffPin,
+    secret
+  ].join('|');
+  return await sha256(payload);
+}
+
+// ============================================================
+// IndexedDB Store (inline)
+// ============================================================
+const DB_NAME = 'TableTimeProDB';
+const DB_VERSION = 1;
+let db = null;
+
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    if (db) { resolve(db); return; }
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => { db = request.result; resolve(db); };
+    request.onupgradeneeded = (event) => {
+      const database = event.target.result;
+      if (!database.objectStoreNames.contains('sessions')) {
+        database.createObjectStore('sessions', { keyPath: 'id' });
+      }
+      if (!database.objectStoreNames.contains('settings')) {
+        database.createObjectStore('settings', { keyPath: 'key' });
+      }
+    };
+  });
+}
+
+function get(storeName, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
+    const request = store.get(key);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result?.value ?? request.result);
+  });
+}
+
+function put(storeName, key, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    const data = storeName === 'settings' ? { key, value } : value;
+    const request = store.put(data);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+function getAll(storeName) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
+    const request = store.getAll();
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result || []);
+  });
+}
+
+async function ensureDefaults() {
+  try {
+    const owner = await get('settings', 'owner');
+    if (!owner) {
+      await put('settings', 'owner', { pin: '9090', secret: '' });
+    }
+  } catch (e) {
+    console.warn('ensureDefaults error:', e);
+  }
+}
+
+// ============================================================
+// App State
+// ============================================================
+let OWNER = { pin: '9090', secret: '' };
+let isAuthenticated = false;
+let currentUser = null;
+let tenantId = null;
+
+// URL Params (for deep linking from Staff App)
+const urlParams = new URLSearchParams(window.location.search);
+const paramTenant = urlParams.get('tenant');
+const paramRole = urlParams.get('role');
+const paramUser = urlParams.get('user');
+
+// ============================================================
+// Initialization
+// ============================================================
+async function init() {
+  try {
+    await idbOpen();
+    await ensureDefaults();
+    await loadOwner();
+    setDateDefaults();
+    await setVenueHeader();
+    
+    // Check if coming from Staff App with auth
+    if (paramTenant) {
+      tenantId = paramTenant;
+      document.getElementById('staffAppLink').href = `https://staff.tabletimepro.com/?tenant=${encodeURIComponent(tenantId)}`;
+    }
+    
+    // Auto-authenticate if coming from staff app with manager role
+    if (paramRole === 'manager' && paramUser) {
+      isAuthenticated = true;
+      currentUser = decodeURIComponent(paramUser);
+      showAuthenticatedUI();
+      document.getElementById('backToStaff').style.display = 'flex';
+      
+      // Log the access
+      await logAudit('venue_access', `Manager ${currentUser} accessed venue portal from staff app`);
+    }
+    
+    await loadReport();
+    await loadAuditLog();
+    await loadAnalytics();
+  } catch (e) {
+    console.error('Init error:', e);
+  }
+}
+
+function showAuthenticatedUI() {
+  document.getElementById('authBanner').style.display = 'flex';
+  document.getElementById('userName').textContent = currentUser || 'Manager';
+  document.getElementById('userRole').textContent = paramRole || 'Manager';
+  document.getElementById('signInBtn').style.display = 'none';
+  document.getElementById('signOutBtn').style.display = 'block';
+  if (tenantId) {
+    document.getElementById('tenantInfo').textContent = `Tenant: ${tenantId.substring(0, 12)}...`;
+  }
+}
+
+function goBackToStaff() {
+  const staffUrl = tenantId 
+    ? `https://staff.tabletimepro.com/?tenant=${encodeURIComponent(tenantId)}`
+    : 'https://staff.tabletimepro.com';
+  window.location.href = staffUrl;
+}
+
+async function setVenueHeader() {
+  try {
+    const s = await get('settings', 'location');
+    const el = document.getElementById('venueLocationName');
+    if (el && s?.name) {
+      el.textContent = s.name;
+    }
+  } catch(e) {}
+}
+
+// ============================================================
+// Tabs
+// ============================================================
+function showTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+  document.getElementById(`${tabName}-tab`).classList.add('active');
+}
+
+// ============================================================
+// Modal
+// ============================================================
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+// ============================================================
+// Auth
+// ============================================================
+async function loadOwner() {
+  try {
+    const o = await get('settings', 'owner');
+    if (o) {
+      OWNER.pin = o.pin || '9090';
+      OWNER.secret = o.secret || '';
+    }
+  } catch (e) {
+    console.warn('loadOwner error:', e);
+  }
+}
+
+async function ownerSignIn() {
+  const pin = (document.getElementById('ownerPinInput').value || '').trim();
+  if (pin !== OWNER.pin) {
+    alert('Invalid PIN');
+    return;
+  }
+  closeModal('ownerLogin');
+  isAuthenticated = true;
+  currentUser = 'Venue Manager';
+  showAuthenticatedUI();
+  await logAudit('login', 'Venue manager signed in via PIN');
+  alert('Signed in successfully.');
+}
+
+async function signOut() {
+  await logAudit('logout', `${currentUser} signed out`);
+  isAuthenticated = false;
+  currentUser = null;
+  document.getElementById('authBanner').style.display = 'none';
+  document.getElementById('signInBtn').style.display = 'block';
+  document.getElementById('signOutBtn').style.display = 'none';
+  document.getElementById('backToStaff').style.display = 'none';
+}
+
+// ============================================================
+// Audit Log
+// ============================================================
+async function logAudit(action, details) {
+  try {
+    let log = await get('settings', 'auditLog') || [];
+    if (!Array.isArray(log)) log = [];
+    log.unshift({
+      timestamp: new Date().toISOString(),
+      action,
+      details,
+      user: currentUser || 'system'
+    });
+    // Keep last 500 entries
+    if (log.length > 500) log.length = 500;
+    await put('settings', 'auditLog', log);
+  } catch(e) {
+    console.warn('Failed to log audit:', e);
+  }
+}
+
+async function loadAuditLog() {
+  const container = document.getElementById('auditLogBody');
+  try {
+    let log = await get('settings', 'auditLog') || [];
+    if (!Array.isArray(log)) log = [];
+    if (log.length === 0) {
+      container.innerHTML = '<div class="audit-row" style="color:var(--muted);text-align:center">No audit entries yet</div>';
+      return;
+    }
+    container.innerHTML = log.map(entry => `
+      <div class="audit-row">
+        <div class="audit-time">${new Date(entry.timestamp).toLocaleString()}</div>
+        <div class="audit-action ${entry.action}">${entry.action.toUpperCase()}</div>
+        <div>${entry.details}</div>
+        <div class="small">by ${entry.user}</div>
+      </div>
+    `).join('');
+  } catch(e) {
+    container.innerHTML = '<div class="audit-row" style="color:var(--danger)">Failed to load audit log</div>';
+  }
+}
+
+async function exportAuditLog() {
+  let log = await get('settings', 'auditLog') || [];
+  if (!Array.isArray(log)) log = [];
+  const rows = [['Timestamp', 'Action', 'Details', 'User']];
+  log.forEach(e => rows.push([e.timestamp, e.action, e.details, e.user]));
+  const csv = rows.map(r => r.map(x => `"${(x ?? '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `audit_log_${Date.now()}.csv`;
+  a.click();
+}
+
+// ============================================================
+// Reports
+// ============================================================
+function setDateDefaults() {
+  const t = new Date();
+  const s = new Date(t.getFullYear(), t.getMonth(), 1);
+  const e = new Date(t.getFullYear(), t.getMonth() + 1, 0);
+  document.getElementById('fromDate').value = s.toISOString().slice(0, 10);
+  document.getElementById('toDate').value = e.toISOString().slice(0, 10);
+}
+
+async function loadReport() {
+  const from = new Date(document.getElementById('fromDate').value);
+  const to = new Date(document.getElementById('toDate').value);
+  const all = await getAll('sessions');
+  
+  const rows = all
+    .filter(s => s.stop && new Date(s.start) >= from && new Date(s.start) <= new Date(to.getTime() + 86400000 - 1))
+    .sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+  
+  const tbody = document.getElementById('reportBody');
+  tbody.innerHTML = '';
+  let totalMin = 0, totalAmt = 0;
+  
+  for (const s of rows) {
+    totalMin += s.minutes || 0;
+    totalAmt += s.amount || 0;
+    const expectedSig = await signSession(s, OWNER.secret);
+    const valid = expectedSig === s.signed;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${new Date(s.start).toLocaleString()}</td>
+      <td>${new Date(s.stop).toLocaleString()}</td>
+      <td>${s.tableName || ''}</td>
+      <td style="text-align:right">${s.players || ''}</td>
+      <td style="text-align:right">${s.minutes || ''}</td>
+      <td style="text-align:right">$${(s.amount || 0).toFixed(2)}</td>
+      <td>${s.staffPin || ''}</td>
+      <td style="font-family:monospace;font-size:11px">${(s.signed || '').slice(0, 12)}…</td>
+      <td>${valid ? '✅' : '⚠️'}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+  
+  document.getElementById('rSessions').textContent = rows.length;
+  document.getElementById('rHours').textContent = (totalMin / 60).toFixed(2);
+  document.getElementById('rMoney').textContent = '$' + (Math.round(totalAmt * 100) / 100).toFixed(2);
+}
+
+async function exportCSV() {
+  const all = await getAll('sessions');
+  const rows = [['start', 'stop', 'table', 'players', 'minutes', 'amount', 'staffPin', 'hash']];
+  all.filter(s => s.stop).forEach(s => 
+    rows.push([s.start, s.stop, s.tableName, s.players, s.minutes, s.amount, s.staffPin, s.signed])
+  );
+  const csv = rows.map(r => r.map(x => `"${x ?? ''}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `venue_sessions_${Date.now()}.csv`;
+  a.click();
+  
+  await logAudit('export', `CSV exported with ${rows.length - 1} sessions`);
+}
+
+async function verifyAll() {
+  const all = await getAll('sessions');
+  let ok = 0, bad = 0;
+  for (const s of all) {
+    const v = (await signSession(s, OWNER.secret)) === s.signed;
+    v ? ok++ : bad++;
+  }
+  document.getElementById('verifyResult').textContent = `${ok} valid, ${bad} invalid`;
+  alert('Verification complete: ' + document.getElementById('verifyResult').textContent);
+  
+  await logAudit('verify', `Verification: ${ok} valid, ${bad} invalid`);
+}
+
+// ============================================================
+// Analytics
+// ============================================================
+async function loadAnalytics() {
+  const all = await getAll('sessions');
+  const completed = all.filter(s => s.stop);
+  
+  // Calculate stats
+  const totalSessions = completed.length;
+  const totalRevenue = completed.reduce((sum, s) => sum + (s.amount || 0), 0);
+  const totalMinutes = completed.reduce((sum, s) => sum + (s.minutes || 0), 0);
+  const avgDuration = totalSessions > 0 ? Math.round(totalMinutes / totalSessions) : 0;
+  
+  // Find busiest table
+  const tableCounts = {};
+  completed.forEach(s => {
+    if (s.tableName) {
+      tableCounts[s.tableName] = (tableCounts[s.tableName] || 0) + 1;
+    }
+  });
+  const busiestTable = Object.entries(tableCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
+  
+  // Update UI
+  document.getElementById('statTotalSessions').textContent = totalSessions;
+  document.getElementById('statTotalRevenue').textContent = '$' + totalRevenue.toFixed(2);
+  document.getElementById('statAvgDuration').textContent = avgDuration;
+  document.getElementById('statBusiestTable').textContent = busiestTable;
+  
+  // Table breakdown
+  const tableRevenue = {};
+  completed.forEach(s => {
+    if (s.tableName) {
+      tableRevenue[s.tableName] = (tableRevenue[s.tableName] || 0) + (s.amount || 0);
+    }
+  });
+  const tableHtml = Object.entries(tableRevenue)
+    .sort((a, b) => b[1] - a[1])
+    .map(([table, revenue]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><span>${table}</span><span style="font-weight:600">$${revenue.toFixed(2)}</span></div>`)
+    .join('');
+  document.getElementById('tableBreakdown').innerHTML = tableHtml || '<span style="color:var(--muted)">No data yet</span>';
+  
+  // Staff breakdown
+  const staffRevenue = {};
+  completed.forEach(s => {
+    const key = s.staffPin || 'Unknown';
+    staffRevenue[key] = (staffRevenue[key] || 0) + (s.amount || 0);
+  });
+  const staffHtml = Object.entries(staffRevenue)
+    .sort((a, b) => b[1] - a[1])
+    .map(([staff, revenue]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)"><span>PIN: ${staff}</span><span style="font-weight:600">$${revenue.toFixed(2)}</span></div>`)
+    .join('');
+  document.getElementById('staffBreakdown').innerHTML = staffHtml || '<span style="color:var(--muted)">No data yet</span>';
+}
+
+// ============================================================
+// Start
+// ============================================================
+init();
+</script>
+</body>
+</html>
